@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <WinSock2.h>
+#include <Windows.h>
 #pragma comment(lib, "ws2_32.lib")
 
 using namespace std;
@@ -34,7 +35,7 @@ int main()
 	}
 
 	//Cấu hình địa chỉ server
-	sockaddr_in serverAddr;
+	sockaddr_in serverAddr{};
 	//Biến kiểu sockaddr_in dùng để	định nghĩa thông tin địa chỉ của máy chủ 
 	serverAddr.sin_family = AF_INET;
 	//Đặt loại địa chỉ của server là AF_INET, cho biết dùng giao thức IPv4
@@ -71,20 +72,45 @@ int main()
 	//NULL & NULL: tham số chỉ định không quan tâm đến thông tin địa chỉ của client
 	cout << "Da co client ket noi\n";
 
-	//Nhận và gởi tin nhắn
-	char buffer[100];
 	while (true)
 	{
-		memset(buffer, 0, sizeof(buffer));
-		//Đảm bảo rằng buffer luôn được làm mới (các giá trị đều = 0) trước khi nhận tin mới 
-		recv(client, buffer, sizeof(buffer), 0);
-		//Tham số cuối là flag, để xác định cách thức hoạt động của hàm 
-		//Ở đây không có cờ đặc biệt nào được áp dụng nên flag = 0
-		cout << "Client nhan: " << buffer << endl;
-		cout << "Server nhan: ";
-		cin.getline(buffer, sizeof(buffer));
-		send(client, buffer, sizeof(buffer), 0);
+		int x, y;
+		char bufferX[sizeof(int)];
+		char bufferY[sizeof(int)];
+		//Nhận dữ liệu vào bufferX, bufferY với kiểu dữ liệu char*
+		recv(client, bufferX, sizeof(int), 0);
+		recv(client, bufferY, sizeof(int), 0);
+		//Chuyển đổi về kiểu int
+		x = *reinterpret_cast<int*>(bufferX);
+		y = *reinterpret_cast<int*>(bufferY);
+		//Sử dụng cấu trúc INPUT để chỉ định sự kiện chuột
+		INPUT input;
+		input.type = INPUT_MOUSE;
+		//Xác định rằng đây là sự kiện liên quan đến chuột
+		input.mi.dx = x;
+		input.mi.dy = y;
+		//Lưu trữ tọa độ chuột
+		input.mi.dwFlags = MOUSEEVENTF_MOVE;
+		//Xác định 1 sự kiện di chuyển chuột
+		SendInput(1, &input, sizeof(INPUT));
+		//SendInput là 1 hàm WIN API, dùng để gửi sự kiện đầu vào đến hệ điều hành, "1" là số lượng sự kiện
+		Sleep(100);
 	}
+
+		////Nhận và gởi tin nhắn
+		//char buffer[100];
+		//while (true)
+		//{
+		//	memset(buffer, 0, sizeof(buffer));
+		//	//Đảm bảo rằng buffer luôn được làm mới (các giá trị đều = 0) trước khi nhận tin mới 
+		//	recv(client, buffer, sizeof(buffer), 0);
+		//	//Tham số cuối là flag, để xác định cách thức hoạt động của hàm 
+		//	//Ở đây không có cờ đặc biệt nào được áp dụng nên flag = 0
+		//	cout << "Client nhan: " << buffer << endl;
+		//	cout << "Server nhan: ";
+		//	cin.getline(buffer, sizeof(buffer));
+		//	send(client, buffer, sizeof(buffer), 0);
+		//}
 
 	//Đóng socket và dọn dẹp WS
 	closesocket(server);

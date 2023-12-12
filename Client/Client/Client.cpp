@@ -1,6 +1,7 @@
 ﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <iostream>
 #include <WinSock2.h>
+#include <Windows.h>
 #pragma comment(lib, "ws2_32.lib")
 
 using namespace std;
@@ -35,14 +36,14 @@ int main()
 	}
 
 	//Cấu hình địa chỉ server
-	sockaddr_in serverAddr;
+	sockaddr_in serverAddr{};
 	//Biến kiểu sockaddr_in dùng để	định nghĩa thông tin địa chỉ của máy chủ 
 	serverAddr.sin_family = AF_INET;
 	//Đặt loại địa chỉ của server là AF_INET, cho biết dùng giao thức IPv4
 	/*char addr[] = "127.0.0.1";
 	char* Addr = new char[strlen(addr) + 1];
 	strcpy_s(Addr, strlen(addr) + 1, addr);*/
-	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	serverAddr.sin_addr.s_addr = inet_addr("192.168.61.128");
 	//Đặt địa chỉ IP của server
 	//"127.0.0.1" là địa chỉ loopback. Máy chủ sẽ lắng nghe kết nối từ client trên cùng máy tính
 	serverAddr.sin_port = htons(12345);
@@ -65,20 +66,34 @@ int main()
 		return 1;
 	}
 
-	//Nhận và gởi tin nhắn
-	char buffer[100];
 	while (true)
 	{
-		cout << "Client nhan: ";
-		cin.getline(buffer, sizeof(buffer));
-		send(client, buffer, sizeof(buffer), 0);
-		memset(buffer, 0, sizeof(buffer));
-		//Đảm bảo rằng buffer luôn được làm mới (các giá trị đều = 0) trước khi nhận tin mới 
-		recv(client, buffer, sizeof(buffer), 0);
-		//Tham số cuối là flag, để xác định cách thức hoạt động của hàm 
-		//Ở đây không có cờ đặc biệt nào được áp dụng nên flag = 0
-		cout << "Server nhan: " << buffer << endl;
+		//Theo dõi sự kiện chuột trên client và gửi tọa độ cho server
+		POINT mousePos;
+		GetCursorPos(&mousePos);
+		//Hàm lấy tọa độ hiện tại của con trỏ chuột và lưu vào biến mousePos
+		int x = mousePos.x;
+		int y = mousePos.y;
+		send(client, reinterpret_cast<char*>(&x), sizeof(int), 0);
+		send(client, reinterpret_cast<char*>(&y), sizeof(int), 0);
+		Sleep(100);
+		//Tạm ngưng vòng lặp trong 50ms, giúp giảm tần suất gởi tọa độ chuột 
 	}
+
+		////Nhận và gởi tin nhắn
+		//char buffer[100];
+		//while (true)
+		//{
+		//	cout << "Client nhan: ";
+		//	cin.getline(buffer, sizeof(buffer));
+		//	send(client, buffer, sizeof(buffer), 0);
+		//	memset(buffer, 0, sizeof(buffer));
+		//	//Đảm bảo rằng buffer luôn được làm mới (các giá trị đều = 0) trước khi nhận tin mới 
+		//	recv(client, buffer, sizeof(buffer), 0);
+		//	//Tham số cuối là flag, để xác định cách thức hoạt động của hàm 
+		//	//Ở đây không có cờ đặc biệt nào được áp dụng nên flag = 0
+		//	cout << "Server nhan: " << buffer << endl;
+		//}
 
 	//Đóng socket và dọn dẹp WS
 	closesocket(client);
